@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HENDRI SmartMarket AI - Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        [x-cloak] { display: none !important; }
+        @keyframes scan {
+            0% { top: 0; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .animate-scan {
+            animation: scan 2s linear infinite;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .sidebar-item-active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden" x-data="marketApp()" x-init="init()">
+    
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-900 text-white p-6 flex flex-col z-20">
+            <div class="flex items-center gap-3 mb-10 px-2">
+                <div class="bg-white p-1 rounded-xl shadow-sm overflow-hidden w-12 h-12 flex items-center justify-center">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black">H</div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight leading-tight">HENDRI</h1>
+                    <h1 class="text-sm font-bold text-blue-500 tracking-tighter -mt-1">SmartMarket AI</h1>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <template x-for="item in menuItems">
+                    <button 
+                        @click="activeTab = item.id"
+                        :class="activeTab === item.id ? 'sidebar-item-active' : 'text-slate-400 hover:bg-slate-800 hover:text-white'"
+                        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
+                    >
+                        <i :data-lucide="item.icon" class="w-5 h-5"></i>
+                        <span class="font-medium" x-text="item.label"></span>
+                    </button>
+                </template>
+            </nav>
+
+            <div class="mt-auto pt-6 border-t border-slate-800">
+                <div class="flex items-center gap-3 px-2 mb-6">
+                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">AS</div>
+                    <div>
+                        <p class="text-sm font-bold truncate w-32">Admin Store</p>
+                        <p class="text-xs text-slate-500">Super Admin</p>
+                    </div>
+                </div>
+                <button class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span class="font-medium">Settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 capitalize" x-text="activeTab.replace('-', ' ')"></h2>
+                    <p class="text-xs text-slate-500 font-medium" x-text="todayStr"></p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="hidden md:flex flex-col text-right">
+                        <span class="text-xs font-bold text-emerald-500 flex items-center justify-end gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            AI ENGINE ACTIVE
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-mono tracking-tighter">LATENCY: 14ms | V8.2.1</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" />
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Area -->
+            <div class="flex-1 overflow-auto p-8">
+                
+                <!-- Tab: Dashboard -->
+                <div x-show="activeTab === 'dashboard'" x-transition class="space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <template x-for="card in dashboardCards">
+                            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div :class="card.bg" class="p-3 rounded-2xl">
+                                        <i :data-lucide="card.icon" :class="card.color" class="w-6 h-6"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">+12.5%</span>
+                                </div>
+                                <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest" x-text="card.title"></h3>
+                                <p class="text-2xl font-black text-slate-900 mt-1" x-text="card.value"></p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i data-lucide="bar-chart-3" class="text-blue-600"></i>
+                                Penjualan per Kategori
+                            </h3>
+                            <div class="h-[350px]">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 p-8 rounded-3xl shadow-xl shadow-slate-900/10 text-white flex flex-col">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                                <i data-lucide="activity" class="text-emerald-400"></i>
+                                AI Live Activity
+                            </h3>
+                            <div class="space-y-4 flex-1">
+                                <template x-for="event in lastEvents.slice(0, 5)">
+                                    <div class="flex items-center gap-4 p-3 bg-slate-800/50 rounded-2xl border border-slate-700/50 hover:bg-slate-800 transition-colors">
+                                        <div :class="event.type === 'sale' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'" class="p-2 rounded-xl">
+                                            <i :data-lucide="event.type === 'sale' ? 'shopping-cart' : 'warehouse'" class="w-4 h-4"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-xs font-bold" x-text="event.msg"></p>
+                                            <p class="text-[10px] text-slate-500" x-text="event.time"></p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <button @click="activeTab = 'monitoring'" class="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                View Full Monitoring <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: AI Monitoring -->
+                <div x-show="activeTab === 'monitoring'" x-transition class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800">A.I Vision Monitoring</h3>
+                            <p class="text-slate-500 font-medium">Auto-detection system powering stock visibility</p>
+                        </div>
+                        <button @click="toggleCamera()" class="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95">
+                            <i data-lucide="refresh-cw" class="w-5 h-5" :class="isCameraActive ? 'animate-spin' : ''"></i>
+                            <span x-text="isCameraActive ? 'Restart Vision' : 'Connect Camera'"></span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        <div class="lg:col-span-3 space-y-8">
+                            <!-- Camera View -->
+                            <div class="relative bg-slate-900 rounded-[2.5rem] overflow-hidden aspect-video shadow-2xl border-8 border-white group">
+                                <video x-ref="video" autoplay playsinline class="w-full h-full object-cover transition-all duration-300" :class="isCameraActive ? 'grayscale-[0.2]' : 'blur-xl opacity-30'"></video>
+                                
+                                <!-- AI Overlays -->
+                                <div class="absolute inset-0 pointer-events-none p-8" x-show="isCameraActive">
+                                    <div class="absolute left-8 top-8 bg-blue-600/90 backdrop-blur-md text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest border border-blue-400">
+                                        GUDANG / ENTRY ZONE
+                                    </div>
+                                    <div class="absolute right-8 top-8 bg-emerald-600/90 backdrop-blur-md text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest border border-emerald-400">
+                                        KONSUMEN / SALE ZONE
+                                    </div>
+
+                                    <!-- Simulated Bounding Boxes -->
+                                    <div class="absolute left-1/4 top-1/2 -translate-y-1/2 w-48 h-64 border-2 border-emerald-500 bg-emerald-500/10 rounded-3xl animate-pulse">
+                                        <div class="absolute -top-7 left-0 bg-emerald-500 text-white text-[9px] px-3 py-1 rounded-lg font-black uppercase tracking-wider">
+                                            PRODUCT_SCAN: DETECTED
+                                        </div>
+                                    </div>
+                                    <div class="absolute right-1/4 bottom-1/4 w-32 h-40 border-2 border-dashed border-slate-400 bg-white/5 rounded-2xl">
+                                        <div class="absolute -top-7 left-0 bg-slate-800 text-white text-[9px] px-3 py-1 rounded-lg font-black uppercase tracking-wider">
+                                            TRACKING_ID: #882
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Scanning Overlay -->
+                                <div class="absolute inset-0 pointer-events-none" x-show="isCameraActive">
+                                    <div class="h-[2px] w-full bg-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-scan relative"></div>
+                                </div>
+
+                                <!-- Placeholder when off -->
+                                <div class="absolute inset-0 flex flex-col items-center justify-center text-white" x-show="!isCameraActive">
+                                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                                        <i data-lucide="camera-off" class="w-10 h-10 text-slate-500"></i>
+                                    </div>
+                                    <p class="text-lg font-bold text-slate-400">Vision System Offline</p>
+                                    <p class="text-sm text-slate-600">Connect camera to start AI analysis</p>
+                                </div>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-6">
+                                <div class="flex-1 w-full">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">SELECT PRODUCT TO SIMULATE</label>
+                                    <select x-model="selectedProductId" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 outline-none focus:ring-4 focus:ring-blue-100 transition-all appearance-none">
+                                        <template x-for="p in products">
+                                            <option :value="p.id" x-text="p.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div class="flex gap-4 w-full md:w-auto mt-6 md:mt-0">
+                                    <button @click="simulateEvent('incoming')" class="flex-1 md:flex-none flex items-center justify-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-900/20">
+                                        <i data-lucide="package-plus" class="w-5 h-5"></i>
+                                        MASUK GUDANG
+                                    </button>
+                                    <button @click="simulateEvent('sale')" class="flex-1 md:flex-none flex items-center justify-center gap-3 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-600/20">
+                                        <i data-lucide="shopping-basket" class="w-5 h-5"></i>
+                                        PENJUALAN AI
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Side Log -->
+                        <div class="space-y-6">
+                            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm h-full flex flex-col overflow-hidden">
+                                <h4 class="font-black text-slate-800 mb-6 flex items-center gap-2 text-sm border-b border-slate-100 pb-4">
+                                    <i data-lucide="history" class="text-blue-600 w-5 h-5"></i>
+                                    DETECTION LOG
+                                </h4>
+                                <div class="space-y-4 flex-1 overflow-auto pr-2 custom-scrollbar">
+                                    <template x-for="event in lastEvents">
+                                        <div class="p-4 bg-slate-50 rounded-2xl border-l-4' :data-type='event.type' :class='event.type === \"sale\" ? \"border-emerald-500\" : \"border-blue-500\"' class='border-l-4 bg-slate-50 p-4 rounded-2xl animate-in slide-in-from-right duration-500'>
+                                            <div class='flex items-start gap-4'>
+                                                <div :class='event.type === \"sale\" ? \"bg-emerald-100 text-emerald-600\" : \"bg-blue-100 text-blue-600\"' class='p-2 rounded-lg'>
+                                                    <i :data-lucide='event.type === \"sale\" ? \"shopping-cart\" : \"warehouse\"' class='w-4 h-4'></i>
+                                                </div>
+                                                <div>
+                                                    <p class='text-xs font-black text-slate-800 leading-tight' x-text='event.msg'></p>
+                                                    <div class='flex items-center gap-2 mt-1'>
+                                                        <span class='text-[10px] font-bold text-slate-400' x-text='event.time'></span>
+                                                        <span class='w-1 h-1 rounded-full bg-slate-300'></span>
+                                                        <span class='text-[9px] font-black text-blue-500'>CONFIRMED</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Stok Barang -->
+                <div x-show="activeTab === 'inventory'" x-transition class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800">Inventory Nexus</h3>
+                            <p class="text-slate-500 font-medium">Real-time stock synchronization across zones</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                                <input type="text" placeholder="Search SKU or Name..." class="pl-12 pr-6 py-3 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none w-72 font-medium">
+                            </div>
+                            <button class="bg-blue-600 text-white p-3 rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
+                                <i data-lucide="plus" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-50/50 border-b border-slate-100">
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Insight</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Barcode</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Unit Price</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Gudang</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Display</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-800 uppercase tracking-widest text-center bg-blue-50/50 border-x border-blue-100/50">Total</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sold</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                <template x-for="p in products">
+                                    <tr class="group hover:bg-slate-50/50 transition-colors">
+                                        <td class="px-8 py-4">
+                                            <div class="flex items-center gap-4">
+                                                <div class="w-12 h-12 rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex-shrink-0">
+                                                    <img :src="`https://picsum.photos/seed/${p.id}/100`" class="w-full h-full object-cover">
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-slate-800" x-text="p.name"></p>
+                                                    <p class="text-[10px] font-medium text-slate-400">CATEGORY: RETAIL</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-8 py-4 font-mono text-xs text-slate-400" x-text="p.barcode"></td>
+                                        <td class="px-8 py-4 text-sm font-black text-slate-800 text-right">Rp <span x-text="p.price.toLocaleString()"></span></td>
+                                        <td class="px-8 py-4 text-center">
+                                            <span class="px-4 py-1.5 rounded-xl bg-blue-50 text-blue-600 font-black text-xs" x-text="p.warehouse"></span>
+                                        </td>
+                                        <td class="px-8 py-4 text-center">
+                                            <span class="px-4 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 font-black text-xs" x-text="p.display"></span>
+                                        </td>
+                                        <td class="px-8 py-4 text-center bg-blue-50/20 font-black text-slate-900 border-x border-blue-100/30">
+                                            <span x-text="p.warehouse + p.display"></span>
+                                        </td>
+                                        <td class="px-8 py-4 text-center text-slate-400 font-bold" x-text="p.sold"></td>
+                                        <td class="px-8 py-4">
+                                            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button class="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                <button class="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab: Cashier -->
+                <div x-show="activeTab === 'cashier'" x-transition class="space-y-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800">Smart Terminal</h3>
+                            <p class="text-slate-500 font-medium">Automatic recognition and checkout system</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <!-- Left: Scan Area -->
+                        <div class="bg-slate-900 rounded-[3rem] overflow-hidden aspect-[4/3] relative border-8 border-white shadow-2xl overflow-hidden group">
+                            <template x-if="cashierStep === 'scan'">
+                                <div class="w-full h-full relative">
+                                    <video x-ref="cashierVideo" autoplay playsinline class="w-full h-full object-cover grayscale-[0.4]"></video>
+                                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div class="w-72 h-72 border-2 border-white/40 rounded-[3rem] relative ring-[40px] ring-black/40">
+                                            <div class="absolute top-0 left-0 w-full h-[3px] bg-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-scan"></div>
+                                        </div>
+                                    </div>
+                                    <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-6 px-10">
+                                        <div class="bg-white/10 backdrop-blur-xl border border-white/20 px-6 py-3 rounded-2xl text-white text-[10px] font-black tracking-[0.2em] uppercase">
+                                            FACE PRODUCT TO LENS
+                                        </div>
+                                        <button @click="scanProduct()" class="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all p-2">
+                                            <div class="w-full h-full border-4 border-slate-900 rounded-full flex items-center justify-center">
+                                                <i data-lucide="scan" class="text-slate-900 w-8 h-8"></i>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="cashierStep !== 'scan'">
+                                <div class="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white relative">
+                                    <div x-show="cashierStep === 'confirm'" class="text-center space-y-6 animate-in zoom-in duration-500">
+                                        <div class="w-32 h-32 bg-blue-600 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/50 border-4 border-white/20">
+                                            <i data-lucide="package-search" class="w-16 h-16"></i>
+                                        </div>
+                                        <h4 class="text-3xl font-black">AI RECOGNIZED!</h4>
+                                        <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">Matching with Database...</p>
+                                    </div>
+                                    <div x-show="cashierStep === 'success'" class="text-center space-y-6 animate-in zoom-in duration-500">
+                                        <div class="w-32 h-32 bg-emerald-500 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/50 border-4 border-white/20">
+                                            <i data-lucide="check-circle-2" class="w-16 h-16"></i>
+                                        </div>
+                                        <h4 class="text-3xl font-black">SALE COMPLETED</h4>
+                                        <p class="text-emerald-400 font-bold uppercase tracking-widest text-xs">Stock Updated via Cloud</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Right: Transaction Details -->
+                        <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col h-full">
+                            <h4 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 border-b border-slate-100 pb-6">
+                                <i data-lucide="shopping-cart" class="text-blue-600 w-6 h-6"></i>
+                                LIVE TRANSACTION
+                            </h4>
+
+                            <div class="flex-1 flex flex-col">
+                                <template x-if="selectedProductForSale">
+                                    <div class="space-y-8 animate-in slide-in-from-bottom-8 duration-500">
+                                        <div class="flex items-center gap-8">
+                                            <div class="w-40 h-40 rounded-[2rem] overflow-hidden border-4 border-slate-50 shadow-inner flex-shrink-0">
+                                                <img :src="`https://picsum.photos/seed/${selectedProductForSale.id}/300`" class="w-full h-full object-cover">
+                                            </div>
+                                            <div class="space-y-2">
+                                                <span class="bg-blue-100 text-blue-600 text-[9px] font-black px-3 py-1 rounded-full tracking-widest uppercase">Validated SKU</span>
+                                                <h5 class="text-3xl font-black text-slate-900" x-text="selectedProductForSale.name"></h5>
+                                                <p class="text-slate-400 font-mono text-sm tracking-tighter" x-text="selectedProductForSale.barcode"></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                                                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 px-1">UNIT PRICE</p>
+                                                <p class="text-xl font-black text-slate-800">Rp <span x-text="selectedProductForSale.price.toLocaleString()"></span></p>
+                                            </div>
+                                            <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                                                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 px-1">QUANTITY</p>
+                                                <p class="text-xl font-black text-slate-800">1 Unit</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="pt-8 border-t border-slate-100 space-y-6">
+                                            <div class="flex justify-between items-center bg-blue-50/50 p-6 rounded-3xl">
+                                                <div>
+                                                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Grand Total</p>
+                                                    <p class="text-4xl font-black text-blue-600">Rp <span x-text="selectedProductForSale.price.toLocaleString()"></span></p>
+                                                </div>
+                                                <i data-lucide="credit-card" class="w-10 h-10 text-blue-200"></i>
+                                            </div>
+
+                                            <div class="flex gap-4">
+                                                <template x-if="cashierStep === 'confirm'">
+                                                    <div class="flex w-full gap-4">
+                                                        <button @click="resetCashier()" class="flex-1 py-5 bg-slate-100 text-slate-500 font-black rounded-2xl hover:bg-slate-200 transition-all text-sm uppercase tracking-widest">Cancel</button>
+                                                        <button @click="processSale()" class="flex-2 w-[60%] py-5 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-2xl shadow-blue-500/30 transition-all text-sm uppercase tracking-widest active:scale-95">Accept Payment</button>
+                                                    </div>
+                                                </template>
+                                                <template x-if="cashierStep === 'success'">
+                                                    <button @click="resetCashier()" class="w-full py-5 bg-emerald-500 text-white font-bold rounded-2xl hover:bg-emerald-600 shadow-2xl shadow-emerald-500/30 transition-all text-sm uppercase tracking-widest">New Customer Scan</button>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                
+                                <template x-if="!selectedProductForSale">
+                                    <div class="flex-1 flex flex-col items-center justify-center text-center space-y-8 animate-pulse">
+                                        <div class="w-32 h-32 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-200 border-2 border-dashed border-slate-200">
+                                            <i data-lucide="shopping-bag" class="w-16 h-16"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-xl font-bold text-slate-300">SYSTEM READY</h5>
+                                            <p class="text-slate-200 font-medium px-10">Use AI Vision on the left to scan products automatically</p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Reports -->
+                <div x-show="activeTab === 'reports'" x-transition class="space-y-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800">Financial Intelligence</h3>
+                            <p class="text-slate-500 font-medium">Daily automated reports and analytics</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button class="flex items-center gap-3 bg-white border border-slate-200 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all">
+                                <i data-lucide="calendar" class="w-5 h-5 text-slate-400"></i>
+                                Select Period
+                            </button>
+                            <button @click="alert('PDF Generated!')" class="flex items-center gap-3 bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-xl">
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                                Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm space-y-10">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-100 pb-10">
+                            <div>
+                                <h4 class="text-2xl font-black text-slate-900" x-text="'REPORT_ID: #SM' + new Date().toISOString().slice(0,10).replace(/-/g,'')"></h4>
+                                <p class="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-2" x-text="todayStr"></p>
+                            </div>
+                            <div class="flex items-center gap-3 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-xs font-black ring-1 ring-emerald-200">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                FINALIZED REPORT
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div class="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 hover:bg-white hover:shadow-xl transition-all duration-300">
+                                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3">Total Volume</p>
+                                <p class="text-3xl font-black text-slate-900" x-text="totalSoldItems + ' Units'"></p>
+                                <div class="mt-4 flex items-center gap-2 text-emerald-500 text-xs font-bold">
+                                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i> +18% from yesterday
+                                </div>
+                            </div>
+                            <div class="p-8 bg-blue-600 rounded-[2rem] text-white shadow-2xl shadow-blue-600/20 hover:scale-105 transition-all duration-300">
+                                <p class="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-3">Total Revenue</p>
+                                <p class="text-3xl font-black">Rp <span x-text="totalRevenue.toLocaleString()"></span></p>
+                                <div class="mt-4 flex items-center gap-2 text-blue-200 text-xs font-bold">
+                                    <i data-lucide="check" class="w-4 h-4"></i> Synced to ERP
+                                </div>
+                            </div>
+                            <div class="p-8 bg-slate-900 rounded-[2rem] text-white shadow-2xl shadow-slate-900/10 hover:scale-105 transition-all duration-300 relative overflow-hidden group">
+                                <div class="relative z-10">
+                                    <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3">Net Profit</p>
+                                    <p class="text-3xl font-black text-emerald-400">Rp <span x-text="totalProfit.toLocaleString()"></span></p>
+                                    <div class="mt-4 flex items-center gap-2 text-slate-400 text-xs font-bold">
+                                        <i data-lucide="trending-up" class="w-4 h-4"></i> Profit Margin: 42%
+                                    </div>
+                                </div>
+                                <i data-lucide="pie-chart" class="absolute right-[-10px] bottom-[-10px] w-32 h-32 text-slate-800 opacity-50 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h5 class="text-sm font-black text-slate-800 uppercase tracking-widest px-1">Itemized Performance Breakdown</h5>
+                            <div class="overflow-hidden rounded-[2rem] border border-slate-100">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-widest">
+                                            <th class="p-6 text-left">Product Intelligence</th>
+                                            <th class="p-6 text-right">Unit Sold</th>
+                                            <th class="p-6 text-right">Gross Omzet</th>
+                                            <th class="p-6 text-right font-black text-emerald-600">Net Contribution</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <template x-for="p in products">
+                                            <tr class="hover:bg-slate-50/30 transition-colors">
+                                                <td class="p-6">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden border">
+                                                            <img :src="`https://picsum.photos/seed/${p.id}/100`" class="w-full h-full object-cover">
+                                                        </div>
+                                                        <span class="font-bold text-slate-800" x-text="p.name"></span>
+                                                    </div>
+                                                </td>
+                                                <td class="p-6 text-right font-bold text-slate-600" x-text="p.sold + ' U'"></td>
+                                                <td class="p-6 text-right font-black text-slate-900">Rp <span x-text="(p.sold * p.price).toLocaleString()"></span></td>
+                                                <td class="p-6 text-right font-black text-emerald-600">
+                                                    Rp <span x-text="(p.sold * (p.price - p.purchase)).toLocaleString()"></span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function marketApp() {
+            return {
+                activeTab: 'dashboard',
+                isCameraActive: false,
+                isCashierCameraActive: false,
+                cashierStep: 'scan',
+                selectedProductId: 1,
+                selectedProductForSale: null,
+                todayStr: '',
+                totalRevenue: 2450000,
+                totalProfit: 860000,
+                totalSoldItems: 124,
+                
+                menuItems: [
+                    { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard' },
+                    { id: 'monitoring', icon: 'camera', label: 'AI Monitoring' },
+                    { id: 'inventory', icon: 'package', label: 'Stok Barang' },
+                    { id: 'cashier', icon: 'shopping-cart', label: 'Smart Kasir' },
+                    { id: 'reports', icon: 'bar-chart-3', label: 'Laporan Harian' },
+                ],
+
+                products: [
+                    { id: 1, name: 'Susu UHT Full Cream', barcode: '899123456701', price: 18500, purchase: 14000, warehouse: 45, display: 12, sold: 18 },
+                    { id: 2, name: 'Indomie Goreng Original', barcode: '899123456702', price: 3100, purchase: 2500, warehouse: 240, display: 60, sold: 142 },
+                    { id: 3, name: 'Minyak Goreng 2L', barcode: '899123456703', price: 34500, purchase: 29000, warehouse: 18, display: 6, sold: 12 },
+                    { id: 4, name: 'Sabun Cair Lifebuoy', barcode: '899123456704', price: 22000, purchase: 18000, warehouse: 34, display: 10, sold: 9 },
+                    { id: 5, name: 'Kopi Kapal Api 165g', barcode: '899123456705', price: 12500, purchase: 10000, warehouse: 56, display: 15, sold: 24 },
+                ],
+
+                dashboardCards: [
+                    { title: 'Warehouse Stock', value: '452 Units', icon: 'warehouse', color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { title: 'In-Display Stock', value: '112 Units', icon: 'monitor', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { title: 'Daily Revenue', value: 'Rp 2.45m', icon: 'trending-up', color: 'text-rose-600', bg: 'bg-rose-50' },
+                    { title: 'Net Profit', value: 'Rp 860k', icon: 'shopping-cart', color: 'text-amber-600', bg: 'bg-amber-50' },
+                ],
+
+                lastEvents: [
+                    { id: 1, type: 'incoming', msg: 'Susu UHT: 12 Units masuk gudang', time: '2 menit yang lalu' },
+                    { id: 2, type: 'sale', msg: 'Penjualan: Minyak Goreng 2L via AI', time: '5 menit yang lalu' },
+                    { id: 3, type: 'incoming', msg: 'Indomie: 48 Units masuk gudang', time: '12 menit yang lalu' },
+                ],
+
+                init() {
+                    this.todayStr = new Date().toLocaleDateString('id-ID', { 
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                    });
+                    
+                    this.$nextTick(() => {
+                        this.initChart();
+                        lucide.createIcons();
+                    });
+
+                    this.$watch('activeTab', (val) => {
+                        this.$nextTick(() => {
+                            lucide.createIcons();
+                            if (val === 'dashboard') this.initChart();
+                            if (val === 'monitoring' && this.isCameraActive) this.startCamera();
+                            if (val === 'cashier') this.startCashierCamera();
+                        });
+                        
+                        if (val !== 'monitoring') this.stopCamera();
+                        if (val !== 'cashier') this.stopCashierCamera();
+                    });
+                },
+
+                initChart() {
+                    const ctx = document.getElementById('salesChart');
+                    if (!ctx) return;
+                    
+                    // Cleanup existing chart if any
+                    if (window.myChart) window.myChart.destroy();
+
+                    window.myChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: this.products.map(p => p.name.split(' ')[0]),
+                            datasets: [{
+                                label: 'Units Sold (Today)',
+                                data: this.products.map(p => p.sold),
+                                backgroundColor: 'rgba(37, 99, 235, 0.85)',
+                                borderRadius: 12,
+                                borderSkipped: false,
+                                barThickness: 40
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: '#0f172a',
+                                    padding: 12,
+                                    titleFont: { size: 12, weight: 'bold' },
+                                    bodyFont: { size: 12 }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: '#f1f5f9', drawBorder: false },
+                                    ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans' }, color: '#94a3b8' }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans' }, color: '#64748b' }
+                                }
+                            }
+                        }
+                    });
+                },
+
+                toggleCamera() {
+                    if (this.isCameraActive) {
+                        this.stopCamera();
+                    } else {
+                        this.startCamera();
+                    }
+                },
+
+                startCamera() {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(stream => {
+                            this.$refs.video.srcObject = stream;
+                            this.isCameraActive = true;
+                        })
+                        .catch(err => {
+                            console.error("Camera error:", err);
+                            alert("Allow camera access to use build-in AI demo features");
+                        });
+                },
+
+                stopCamera() {
+                    if (this.$refs.video && this.$refs.video.srcObject) {
+                        this.$refs.video.srcObject.getTracks().forEach(t => t.stop());
+                        this.$refs.video.srcObject = null;
+                        this.isCameraActive = false;
+                    }
+                },
+
+                startCashierCamera() {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(stream => {
+                            if (this.$refs.cashierVideo) {
+                                this.$refs.cashierVideo.srcObject = stream;
+                                this.isCashierCameraActive = true;
+                            }
+                        })
+                        .catch(err => console.error(err));
+                },
+
+                stopCashierCamera() {
+                    if (this.$refs.cashierVideo && this.$refs.cashierVideo.srcObject) {
+                        this.$refs.cashierVideo.srcObject.getTracks().forEach(t => t.stop());
+                        this.$refs.cashierVideo.srcObject = null;
+                        this.isCashierCameraActive = false;
+                    }
+                },
+
+                simulateEvent(type) {
+                    const product = this.products.find(p => p.id == this.selectedProductId);
+                    if (!product) return;
+
+                    const msg = type === 'sale' 
+                        ? `Penjualan: ${product.name} (1 Unit)` 
+                        : `Masuk Gudang: ${product.name} (12 Unit)`;
+                    
+                    const time = 'Baru saja';
+                    this.lastEvents.unshift({ id: Date.now(), type, msg, time });
+                    
+                    if (type === 'sale') {
+                        this.totalRevenue += product.price;
+                        this.totalProfit += (product.price - product.purchase);
+                        this.totalSoldItems += 1;
+                        product.sold += 1;
+                        product.display -= 1;
+                    } else {
+                        product.warehouse += 12;
+                    }
+
+                    // Visual feedback on video
+                    if (this.$refs.video) {
+                        this.$refs.video.classList.add('brightness-150');
+                        setTimeout(() => this.$refs.video.classList.remove('brightness-150'), 200);
+                    }
+                    
+                    this.$nextTick(() => lucide.createIcons());
+                    this.initChart();
+                },
+
+                scanProduct() {
+                    this.cashierStep = 'confirm';
+                    this.selectedProductForSale = this.products[Math.floor(Math.random() * this.products.length)];
+                    setTimeout(() => lucide.createIcons(), 100);
+                },
+
+                processSale() {
+                    const product = this.selectedProductForSale;
+                    this.simulateEvent('sale');
+                    this.cashierStep = 'success';
+                    setTimeout(() => lucide.createIcons(), 100);
+                },
+
+                resetCashier() {
+                    this.cashierStep = 'scan';
+                    this.selectedProductForSale = null;
+                    this.startCashierCamera();
+                    setTimeout(() => lucide.createIcons(), 100);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
